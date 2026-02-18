@@ -1,0 +1,904 @@
+/*
+ * This annotated grammar is a heavily modified form of the one produced by
+ * Sreenivasa Viswanadha (simplified and enhanced for 1.5) found in the
+ * JavaCC grammar repository.  The original copyright notice follows.
+ */
+/*
+ * Copyright Â© 2002 Sun Microsystems, Inc., 4150 Network Circle, Santa Clara,
+ * California 95054, U.S.A. All rights reserved.  Sun Microsystems, Inc. has
+ * intellectual property rights relating to technology embodied in the product
+ * that is described in this document. In particular, and without limitation,
+ * these intellectual property rights may include one or more of the U.S.
+ * patents listed at http://www.sun.com/patents and one or more additional
+ * patents or pending patent applications in the U.S. and in other countries.
+ * U.S. Government Rights - Commercial software. Government users are subject
+ * to the Sun Microsystems, Inc. standard license agreement and applicable
+ * provisions of the FAR and its supplements.  Use is subject to license terms.
+ * Sun,  Sun Microsystems,  the Sun logo and  Java are trademarks or registered
+ * trademarks of Sun Microsystems, Inc. in the U.S. and other countries.  This
+ * product is covered and controlled by U.S. Export Control laws and may be
+ * subject to the export or import laws in other countries.  Nuclear, missile,
+ * chemical biological weapons or nuclear maritime end uses or end users,
+ * whether direct or indirect, are strictly prohibited.  Export or reexport
+ * to countries subject to U.S. embargo or to entities identified on U.S.
+ * export exclusion lists, including, but not limited to, the denied persons
+ * and specially designated nationals lists is strictly prohibited.
+ */
+ options {
+  BUILD_TOKEN_MANAGER = true;
+  JAVA_UNICODE_ESCAPE = true;
+  UNICODE_INPUT = true;
+  ERROR_REPORTING = true;
+  COMMON_TOKEN_ACTION = false;
+  STATIC = false;
+  DEBUG_TOKEN_MANAGER = false;
+  DEBUG_PARSER = false;
+  TRACK_TOKENS = true;
+  MULTI = true;
+  VISITOR = true;
+}
+
+PARSER_BEGIN(Java12Parser)
+
+package ca.ucalgary.cpsc49902.javacc;
+
+import java.util.*;
+
+public class Java12Parser {
+    public static void resetInvocations() {}
+    public static void setFileName(String name) {}
+}
+
+PARSER_END(Java12Parser)
+
+/* =========================================================================
+   LEXER (TOKENS)
+   ========================================================================= */
+
+/* SKIP WHITESPACE */
+SPECIAL_TOKEN :
+{
+  " " | "\t" | "\f" | "\n" | "\r"
+}
+
+/* COMMENTS */
+SPECIAL_TOKEN :
+{
+  < SINGLE_LINE_COMMENT : "//" (~["\n","\r"])* >
+}
+
+MORE :
+{
+  < "/**" ~["/"] > { input_stream.backup(1); } : IN_FORMAL_COMMENT
+| "/*" : IN_MULTI_LINE_COMMENT
+}
+
+<IN_FORMAL_COMMENT>
+SPECIAL_TOKEN :
+{
+  < FORMAL_COMMENT : "*/" > : DEFAULT
+}
+
+<IN_MULTI_LINE_COMMENT>
+SPECIAL_TOKEN :
+{
+  < MULTI_LINE_COMMENT : "*/" > : DEFAULT
+}
+
+<IN_FORMAL_COMMENT, IN_MULTI_LINE_COMMENT>
+MORE :
+{
+  < ~[] >
+}
+
+/* KEYWORDS */
+TOKEN :
+{
+  < ABSTRACT: "abstract" >
+| < BOOLEAN: "boolean" >
+| < BREAK: "break" >
+| < BYTE: "byte" >
+| < CASE: "case" >
+| < CATCH: "catch" >
+| < CHAR: "char" >
+| < CLASS: "class" >
+| < CONST: "const" >
+| < CONTINUE: "continue" >
+| < _DEFAULT: "default" >
+| < DO: "do" >
+| < DOUBLE: "double" >
+| < ELSE: "else" >
+| < EXTENDS: "extends" >
+| < FINAL: "final" >
+| < FINALLY: "finally" >
+| < FLOAT: "float" >
+| < FOR: "for" >
+| < GOTO: "goto" >
+| < IF: "if" >
+| < IMPLEMENTS: "implements" >
+| < IMPORT: "import" >
+| < INSTANCEOF: "instanceof" >
+| < INT: "int" >
+| < INTERFACE: "interface" >
+| < LONG: "long" >
+| < NATIVE: "native" >
+| < NEW: "new" >
+| < PACKAGE: "package" >
+| < PRIVATE: "private" >
+| < PROTECTED: "protected" >
+| < PUBLIC: "public" >
+| < RETURN: "return" >
+| < SHORT: "short" >
+| < STATIC: "static" >
+| < STRICTFP: "strictfp" >
+| < SUPER: "super" >
+| < SWITCH: "switch" >
+| < SYNCHRONIZED: "synchronized" >
+| < THIS: "this" >
+| < THROW: "throw" >
+| < THROWS: "throws" >
+| < TRANSIENT: "transient" >
+| < TRY: "try" >
+| < VOID: "void" >
+| < VOLATILE: "volatile" >
+| < WHILE: "while" >
+}
+
+/* LITERALS */
+TOKEN :
+{
+  < INTEGER_LITERAL:
+        <DECIMAL_LITERAL> (["l","L"])?
+      | <HEX_LITERAL> (["l","L"])?
+      | <OCTAL_LITERAL> (["l","L"])?
+  >
+|
+  < #DECIMAL_LITERAL: ["1"-"9"] (["0"-"9"])* >
+|
+  < #HEX_LITERAL: "0" ["x","X"] (["0"-"9","a"-"f","A"-"F"])+ >
+|
+  < #OCTAL_LITERAL: "0" (["0"-"7"])* >
+|
+  < FLOATING_POINT_LITERAL:
+        (["0"-"9"])+ "." (["0"-"9"])* (<EXPONENT>)? (["f","F","d","D"])?
+      | "." (["0"-"9"])+ (<EXPONENT>)? (["f","F","d","D"])?
+      | (["0"-"9"])+ <EXPONENT> (["f","F","d","D"])?
+      | (["0"-"9"])+ (<EXPONENT>)? ["f","F","d","D"]
+  >
+|
+  < #EXPONENT: ["e","E"] (["+","-"])? (["0"-"9"])+ >
+|
+  < CHARACTER_LITERAL:
+      "'"
+      (   (~["'","\\","\n","\r"])
+        | ("\\"
+            ( ["n","t","b","r","f","\\","'","\""]
+            | ["0"-"7"] ( ["0"-"7"] )?
+            | ["0"-"3"] ["0"-"7"] ["0"-"7"]
+            )
+          )
+      )
+      "'"
+  >
+|
+  < STRING_LITERAL:
+      "\""
+      (   (~["\"","\\","\n","\r"])
+        | ("\\"
+            ( ["n","t","b","r","f","\\","'","\""]
+            | ["0"-"7"] ( ["0"-"7"] )?
+            | ["0"-"3"] ["0"-"7"] ["0"-"7"]
+            )
+          )
+      )*
+      "\""
+  >
+| < TRUE: "true" >
+| < FALSE: "false" >
+| < NULL: "null" >
+}
+
+/* IDENTIFIERS */
+TOKEN :
+{
+  < IDENTIFIER: <LETTER> (<LETTER>|<DIGIT>)* >
+|
+  < #LETTER:
+      [
+       "\u0024",
+       "\u0041"-"\u005a",
+       "\u005f",
+       "\u0061"-"\u007a",
+       "\u00c0"-"\u00d6",
+       "\u00d8"-"\u00f6",
+       "\u00f8"-"\u00ff",
+       "\u0100"-"\u1fff",
+       "\u3040"-"\u318f",
+       "\u3300"-"\u337f",
+       "\u3400"-"\u3d2d",
+       "\u4e00"-"\u9fff",
+       "\uf900"-"\ufaff"
+      ]
+  >
+|
+  < #DIGIT:
+      [
+       "\u0030"-"\u0039",
+       "\u0660"-"\u0669",
+       "\u06f0"-"\u06f9",
+       "\u0966"-"\u096f",
+       "\u09e6"-"\u09ef",
+       "\u0a66"-"\u0a6f",
+       "\u0ae6"-"\u0aef",
+       "\u0b66"-"\u0b6f",
+       "\u0be7"-"\u0bef",
+       "\u0c66"-"\u0c6f",
+       "\u0ce6"-"\u0cef",
+       "\u0d66"-"\u0d6f",
+       "\u0e50"-"\u0e59",
+       "\u0ed0"-"\u0ed9",
+       "\u1040"-"\u1049"
+      ]
+  >
+}
+
+/* SEPARATORS */
+TOKEN :
+{
+  < LPAREN: "(" >
+| < RPAREN: ")" >
+| < LBRACE: "{" >
+| < RBRACE: "}" >
+| < LBRACKET: "[" >
+| < RBRACKET: "]" >
+| < SEMICOLON: ";" >
+| < COMMA: "," >
+| < DOT: "." >
+}
+
+/* OPERATORS */
+TOKEN :
+{
+  < ASSIGN: "=" >
+| < LT: "<" >
+| < BANG: "!" >
+| < TILDE: "~" >
+| < HOOK: "?" >
+| < COLON: ":" >
+| < EQ: "==" >
+| < LE: "<=" >
+| < GE: ">=" >
+| < NE: "!=" >
+| < SC_OR: "||" >
+| < SC_AND: "&&" >
+| < INCR: "++" >
+| < DECR: "--" >
+| < PLUS: "+" >
+| < MINUS: "-" >
+| < STAR: "*" >
+| < SLASH: "/" >
+| < BIT_AND: "&" >
+| < BIT_OR: "|" >
+| < XOR: "^" >
+| < REM: "%" >
+| < LSHIFT: "<<" >
+| < RSIGNEDSHIFT: ">>" >
+| < RUNSIGNEDSHIFT: ">>>" >
+| < PLUSASSIGN: "+=" >
+| < MINUSASSIGN: "-=" >
+| < STARASSIGN: "*=" >
+| < SLASHASSIGN: "/=" >
+| < ANDASSIGN: "&=" >
+| < ORASSIGN: "|=" >
+| < XORASSIGN: "^=" >
+| < REMASSIGN: "%=" >
+| < LSHIFTASSIGN: "<<=" >
+| < RSIGNEDSHIFTASSIGN: ">>=" >
+| < RUNSIGNEDSHIFTASSIGN: ">>>=" >
+| < GT: ">" >
+}
+
+/* =========================================================================
+   PARSER (Chapter 18 Structure)
+   ========================================================================= */
+
+Node CompilationUnit() : {}
+{
+  [ PackageDeclaration() ]
+  ( ImportDeclaration() )*
+  (
+    LOOKAHEAD( (Modifier())* ( <CLASS> | <INTERFACE> ) )
+    TypeDeclaration()
+    |
+    <SEMICOLON>
+  )*
+  <EOF>
+  { return jjtThis; }
+}
+
+void PackageDeclaration() : {}
+{
+  <PACKAGE> QualifiedIdentifier() <SEMICOLON>
+}
+
+void ImportDeclaration() : {}
+{
+  <IMPORT> QualifiedIdentifier() [ <DOT> <STAR> ] <SEMICOLON>
+}
+
+void TypeDeclaration() : {}
+{
+    ClassOrInterfaceDeclaration()
+}
+
+void ClassOrInterfaceDeclaration() : {}
+{
+  ModifiersOpt() ( ClassDeclaration() | InterfaceDeclaration() )
+}
+
+void ClassDeclaration() : {}
+{
+  <CLASS> <IDENTIFIER> [ <EXTENDS> Type() ] [ <IMPLEMENTS> TypeList() ] ClassBody()
+}
+
+void InterfaceDeclaration() : {}
+{
+  <INTERFACE> <IDENTIFIER> [ <EXTENDS> TypeList() ] InterfaceBody()
+}
+
+void TypeList() : {}
+{
+  Type() ( <COMMA> Type() )*
+}
+
+void ClassBody() : {}
+{
+  <LBRACE> ( ClassBodyDeclaration() )* <RBRACE>
+}
+
+void InterfaceBody() : {}
+{
+  <LBRACE> ( InterfaceBodyDeclaration() )* <RBRACE>
+}
+
+/* Chapter 18 Style:
+  ClassBodyDeclaration: ; | [static] Block | ModifiersOpt MemberDecl
+*/
+void ClassBodyDeclaration() : {}
+{
+    <SEMICOLON>
+  | LOOKAHEAD(2) [ <STATIC> ] Block()
+  | ModifiersOpt() MemberDecl()
+}
+
+/*
+  Chapter 18 Left Factoring for MemberDecl
+*/
+void MemberDecl() : {}
+{
+  LOOKAHEAD( Type() <IDENTIFIER> )
+  MethodOrFieldDecl()
+
+| <VOID> <IDENTIFIER> MethodDeclaratorRest()
+
+| LOOKAHEAD( <IDENTIFIER> <LPAREN> )
+  <IDENTIFIER> ConstructorDeclaratorRest()
+
+| ClassOrInterfaceDeclaration()
+}
+
+void MethodOrFieldDecl() : {}
+{
+  Type() <IDENTIFIER> MethodOrFieldRest()
+}
+
+void MethodOrFieldRest() : {}
+{
+    VariableDeclaratorRest() ( <COMMA> VariableDeclarator() )* <SEMICOLON>
+  | MethodDeclaratorRest()
+}
+
+void InterfaceBodyDeclaration() : {}
+{
+    <SEMICOLON>
+  | ModifiersOpt() InterfaceMemberDecl()
+}
+
+void InterfaceMemberDecl() : {}
+{
+    LOOKAHEAD( Type() <IDENTIFIER> )
+    InterfaceMethodOrFieldDecl()
+  | <VOID> <IDENTIFIER> VoidInterfaceMethodDeclaratorRest()
+  | ClassOrInterfaceDeclaration()
+}
+
+void InterfaceMethodOrFieldDecl() : {}
+{
+    Type() <IDENTIFIER> InterfaceMethodOrFieldRest()
+}
+
+void InterfaceMethodOrFieldRest() : {}
+{
+    ConstantDeclaratorsRest() <SEMICOLON>
+  | InterfaceMethodDeclaratorRest()
+}
+
+/* Declarators */
+
+void MethodDeclaratorRest() : {}
+{
+  FormalParameters() BracketsOpt() [ <THROWS> QualifiedIdentifierList() ] ( Block() | <SEMICOLON> )
+}
+
+void VoidMethodDeclaratorRest() : {} // Used for 'void' methods
+{
+  FormalParameters() [ <THROWS> QualifiedIdentifierList() ] ( Block() | <SEMICOLON> )
+}
+
+void InterfaceMethodDeclaratorRest() : {}
+{
+  FormalParameters() BracketsOpt() [ <THROWS> QualifiedIdentifierList() ] <SEMICOLON>
+}
+
+void VoidInterfaceMethodDeclaratorRest() : {}
+{
+  FormalParameters() [ <THROWS> QualifiedIdentifierList() ] <SEMICOLON>
+}
+
+void ConstructorDeclaratorRest() : {}
+{
+  FormalParameters() [ <THROWS> QualifiedIdentifierList() ] ConstructorBody()
+}
+
+void ConstructorBody() : {}
+{
+  <LBRACE> [ LOOKAHEAD(2) ExplicitConstructorInvocation() ] ( BlockStatement() )* <RBRACE>
+}
+
+void ExplicitConstructorInvocation() : {}
+{
+  ( <THIS> | <SUPER> ) Arguments() <SEMICOLON>
+}
+
+/* Variables & Constants */
+
+void VariableDeclarators() : {}
+{
+  VariableDeclarator() ( <COMMA> VariableDeclarator() )*
+}
+
+void VariableDeclarator() : {}
+{
+  <IDENTIFIER> VariableDeclaratorRest()
+}
+
+void VariableDeclaratorRest() : {}
+{
+  BracketsOpt() [ <ASSIGN> VariableInitializer() ]
+}
+
+void ConstantDeclaratorsRest() : {}
+{
+  ConstantDeclaratorRest() ( <COMMA> ConstantDeclarator() )*
+}
+
+void ConstantDeclarator() : {}
+{
+  <IDENTIFIER> ConstantDeclaratorRest()
+}
+
+void ConstantDeclaratorRest() : {}
+{
+  BracketsOpt() <ASSIGN> VariableInitializer()
+}
+
+void VariableInitializer() : {}
+{
+  ArrayInitializer() | Expression()
+}
+
+void ArrayInitializer() : {}
+{
+  <LBRACE> [ VariableInitializer() ( <COMMA> VariableInitializer() )* [ <COMMA> ] ] <RBRACE>
+}
+
+/* Types & Modifiers */
+
+void Type() : {}
+{
+  ( BasicType() | QualifiedIdentifier() ) BracketsOpt()
+}
+
+void BasicType() : {}
+{
+  <BOOLEAN> | <BYTE> | <SHORT> | <CHAR> | <INT> | <LONG> | <FLOAT> | <DOUBLE>
+}
+
+void QualifiedIdentifier() : {Token t; String s = "";}
+{
+  t=<IDENTIFIER> { s = t.image; }
+  (
+    LOOKAHEAD(2) <DOT> t=<IDENTIFIER> { s += "." + t.image; }
+  )*
+  { jjtThis.jjtSetValue(s); }
+}
+
+void QualifiedIdentifierList() : {}
+{
+  QualifiedIdentifier() ( <COMMA> QualifiedIdentifier() )*
+}
+
+void ModifiersOpt() : {}
+{
+  ( Modifier() )*
+}
+
+void Modifier() : {}
+{
+  <PUBLIC> | <PROTECTED> | <PRIVATE> | <STATIC> | <ABSTRACT> | <FINAL> | <NATIVE> | <SYNCHRONIZED> | <TRANSIENT> | <VOLATILE> | <STRICTFP>
+}
+
+/* Parameters */
+
+void FormalParameters() : {}
+{
+  <LPAREN> [ FormalParameter() ( <COMMA> FormalParameter() )* ] <RPAREN>
+}
+
+void FormalParameter() : {}
+{
+  [ <FINAL> ] Type() VariableDeclaratorId()
+}
+
+void VariableDeclaratorId() : {}
+{
+  <IDENTIFIER> BracketsOpt()
+}
+
+void BracketsOpt() : {}
+{
+  ( <LBRACKET> <RBRACKET> )*
+}
+
+/* Statements */
+
+void Statement() : {}
+{
+  // 1. Labeled Statement (Must be first)
+  LOOKAHEAD( <IDENTIFIER> <COLON> )
+  LabeledStatement()
+|
+  // 2. Block
+  Block()
+|
+  // 3. If Statement
+  <IF> ParExpression() Statement() [ LOOKAHEAD(1) <ELSE> Statement() ]
+|
+  // 4. FIXED FOR LOOP (Handles the semicolon ambiguity)
+  <FOR> <LPAREN>
+  (
+      // Case A: "for (int i=0;" -> LocalVariableDeclarationStatement consumes the ';'
+      LOOKAHEAD( [ <FINAL> ] Type() <IDENTIFIER> )
+      LocalVariableDeclarationStatement()
+    |
+      // Case B: "for (i=0;" or "for (;" -> We must explicitly consume the ';'
+      [ StatementExpressionList() ] <SEMICOLON>
+  )
+  [ Expression() ] <SEMICOLON>
+  [ ForUpdate() ] <RPAREN>
+  Statement()
+|
+  // 5. While Statement
+  <WHILE> ParExpression() Statement()
+|
+  // 6. Do-While
+  <DO> Statement() <WHILE> ParExpression() <SEMICOLON>
+|
+  // 7. Try-Catch-Finally
+  <TRY> Block() ( ( CatchClause() )+ [ <FINALLY> Block() ] | <FINALLY> Block() )
+|
+  // 8. Switch
+  <SWITCH> ParExpression() <LBRACE> ( SwitchBlockStatementGroup() )* <RBRACE>
+|
+  // 9. Synchronized
+  <SYNCHRONIZED> ParExpression() Block()
+|
+  // 10. Return
+  <RETURN> [ Expression() ] <SEMICOLON>
+|
+  // 11. Throw
+  <THROW> Expression() <SEMICOLON>
+|
+  // 12. Break
+  <BREAK> [ <IDENTIFIER> ] <SEMICOLON>
+|
+  // 13. Continue
+  <CONTINUE> [ <IDENTIFIER> ] <SEMICOLON>
+|
+  // 14. Empty Statement
+  <SEMICOLON>
+|
+  // 15. Expression Statement (Assignment, method call, etc.)
+  StatementExpression() <SEMICOLON>
+}
+
+void LabeledStatement() : {}
+{
+  <IDENTIFIER> <COLON> Statement()
+}
+
+void Block() : {}
+{
+  <LBRACE> ( BlockStatement() )* <RBRACE>
+}
+
+void BlockStatement() : {}
+{
+  // Check for Local Variable FIRST (Type id...)
+  LOOKAHEAD([ <FINAL> ] Type() <IDENTIFIER>)
+  LocalVariableDeclarationStatement()
+|
+  // Check for Inner Class (class Name...)
+  LOOKAHEAD(ModifiersOpt() ( <CLASS> | <INTERFACE> ))
+  ClassOrInterfaceDeclaration()
+|
+  // Fall back to LabeledStatement or standard Statement
+  Statement()
+}
+
+void LocalVariableDeclarationStatement() : {}
+{
+  [ <FINAL> ] Type() VariableDeclarators() <SEMICOLON>
+}
+
+void ParExpression() : {}
+{
+  <LPAREN> Expression() <RPAREN>
+}
+
+void StatementExpression() : {}
+{
+  Expression() // In standard Java, this must be restricted, but for 1.2 parser, this suffices
+}
+
+void CatchClause() : {}
+{
+  <CATCH> <LPAREN> FormalParameter() <RPAREN> Block()
+}
+
+void SwitchBlockStatementGroup() : {}
+{
+  ( SwitchLabel() )+ ( BlockStatement() )*
+}
+
+void SwitchLabel() : {}
+{
+  <CASE> Expression() <COLON>
+| <_DEFAULT> <COLON>
+}
+
+void ForInit() : {}
+{
+  LOOKAHEAD( [ <FINAL> ] Type() <IDENTIFIER> )
+  LocalVariableDeclarationStatement()
+|
+  StatementExpressionList()
+}
+
+void ForUpdate() : {}
+{
+  StatementExpressionList()
+}
+
+void StatementExpressionList() : {}
+{
+  StatementExpression() ( <COMMA> StatementExpression() )*
+}
+
+/* Expressions */
+/* Note: Maintaining standard precedence hierarchy instead of flat "InfixOp" structure */
+
+void Expression() : {}
+{
+  ConditionalExpression() [ AssignmentOperator() Expression() ]
+}
+
+void AssignmentOperator() : {}
+{
+  <ASSIGN> | <PLUSASSIGN> | <MINUSASSIGN> | <STARASSIGN> | <SLASHASSIGN> | <ANDASSIGN> | <ORASSIGN> | <XORASSIGN> | <REMASSIGN> | <LSHIFTASSIGN> | <RSIGNEDSHIFTASSIGN> | <RUNSIGNEDSHIFTASSIGN>
+}
+
+void ConditionalExpression() : {}
+{
+  ConditionalOrExpression() [ <HOOK> Expression() <COLON> ConditionalExpression() ]
+}
+
+void ConditionalOrExpression() : {}
+{
+  ConditionalAndExpression() ( <SC_OR> ConditionalAndExpression() )*
+}
+
+void ConditionalAndExpression() : {}
+{
+  InclusiveOrExpression() ( <SC_AND> InclusiveOrExpression() )*
+}
+
+void InclusiveOrExpression() : {}
+{
+  ExclusiveOrExpression() ( <BIT_OR> ExclusiveOrExpression() )*
+}
+
+void ExclusiveOrExpression() : {}
+{
+  AndExpression() ( <XOR> AndExpression() )*
+}
+
+void AndExpression() : {}
+{
+  EqualityExpression() ( <BIT_AND> EqualityExpression() )*
+}
+
+void EqualityExpression() : {}
+{
+  RelationalExpression() ( ( <EQ> | <NE> ) RelationalExpression() )*
+}
+
+void RelationalExpression() : {}
+{
+  ShiftExpression() ( ( <LT> | <GT> | <LE> | <GE> ) ShiftExpression() | <INSTANCEOF> Type() )*
+}
+
+void ShiftExpression() : {}
+{
+  AdditiveExpression() ( ( <LSHIFT> | <RSIGNEDSHIFT> | <RUNSIGNEDSHIFT> ) AdditiveExpression() )*
+}
+
+void AdditiveExpression() : {}
+{
+  MultiplicativeExpression() ( ( <PLUS> | <MINUS> ) MultiplicativeExpression() )*
+}
+
+void MultiplicativeExpression() : {}
+{
+  UnaryExpression() ( ( <STAR> | <SLASH> | <REM> ) UnaryExpression() )*
+}
+
+void UnaryExpression() : {}
+{
+  ( <PLUS> | <MINUS> ) UnaryExpression()
+| PreIncrementExpression()
+| PreDecrementExpression()
+| UnaryExpressionNotPlusMinus()
+}
+
+void PreIncrementExpression() : {}
+{
+  <INCR> PrimaryExpression()
+}
+
+void PreDecrementExpression() : {}
+{
+  <DECR> PrimaryExpression()
+}
+
+void UnaryExpressionNotPlusMinus() : {}
+{
+  ( <BANG> | <TILDE> ) UnaryExpression()
+| LOOKAHEAD( <LPAREN> Type() <RPAREN> ) CastExpression()
+| PostfixExpression()
+}
+
+void CastExpression() : {}
+{
+  <LPAREN> Type() <RPAREN> UnaryExpression()
+}
+
+void PostfixExpression() : {}
+{
+  PrimaryExpression() [ <INCR> | <DECR> ]
+}
+
+/* Primary / Creator / Selector Logic */
+
+void PrimaryExpression() #PrimaryExpression :
+{
+  String value = "";
+}
+{
+  PrimaryPrefix()
+  {
+    if (jjtThis.jjtGetValue() != null) {
+      value = jjtThis.jjtGetValue().toString();
+    }
+  }
+  (
+    LOOKAHEAD(2)
+    PrimarySuffix()
+    {
+      if (jjtThis.jjtGetValue() != null) {
+        value += jjtThis.jjtGetValue().toString();
+      }
+    }
+  )*
+  {
+    jjtThis.jjtSetValue(value);
+  }
+}
+
+void PrimaryPrefix() : {Token t; Token t2;}
+{
+  Literal()
+| t=<THIS> { jjtThis.jjtSetValue(t.image); }
+| t=<SUPER> <DOT> t2=<IDENTIFIER> { jjtThis.jjtSetValue(t.image + "." + t2.image); }
+| <LPAREN> Expression() <RPAREN>
+| AllocationExpression()
+| LOOKAHEAD( ResultType() <DOT> <CLASS> ) ResultType() <DOT> <CLASS>
+| QualifiedIdentifier()
+}
+
+void PrimarySuffix() : {Token t;}
+{
+  LOOKAHEAD(2) <DOT> t=<THIS> { jjtThis.jjtSetValue("." + t.image); }
+| LOOKAHEAD(2) <DOT> <SUPER> { jjtThis.jjtSetValue(".super"); }
+| LOOKAHEAD(2) <DOT> AllocationExpression()
+| <LBRACKET> Expression() <RBRACKET>
+| <DOT> t=<IDENTIFIER> { jjtThis.jjtSetValue("." + t.image); }
+| Arguments()
+}
+
+
+//  Chapter 18: Creator: QualifiedIdentifier ( ArrayCreatorRest | ClassCreatorRest )
+void AllocationExpression() #AllocationExpression : {}
+{
+  <NEW> Creator()
+}
+
+void Creator() : {}
+{
+    LOOKAHEAD(2)
+    BasicType() ArrayCreatorRest()
+  |
+    QualifiedIdentifier() ( ArrayCreatorRest() | ClassCreatorRest() )
+}
+
+void ArrayCreatorRest() : {}
+{
+    <LBRACKET>
+    (
+      LOOKAHEAD(2) <RBRACKET> BracketsOpt() ArrayInitializer()
+    |
+      Expression() <RBRACKET> ( LOOKAHEAD(2) <LBRACKET> Expression() <RBRACKET> )* BracketsOpt()
+    )
+}
+
+void ClassCreatorRest() : {}
+{
+    Arguments() [ ClassBody() ]
+}
+
+/* Arguments (Mandatory for visitor hooks)
+   Chapter 18: Arguments: ( [Expression { , Expression }] )
+*/
+void Arguments() #Arguments : {}
+{
+  <LPAREN> [ Expression() ( <COMMA> Expression() )* ] <RPAREN>
+}
+
+void ResultType() : {}
+{
+  <VOID> | Type()
+}
+
+void Literal() : {Token t;}
+{
+  (
+    t=<INTEGER_LITERAL>
+  | t=<FLOATING_POINT_LITERAL>
+  | t=<CHARACTER_LITERAL>
+  | t=<STRING_LITERAL>
+  | t=<TRUE>
+  | t=<FALSE>
+  | t=<NULL>
+  )
+  { jjtThis.jjtSetValue(t.image); }
+}
